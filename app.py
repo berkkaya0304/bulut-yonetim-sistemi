@@ -228,14 +228,24 @@ with st.sidebar:
                 doc.add_paragraph(f'Oluşturulma Tarihi: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
                 
                 # Terraform durumunu al
-                terraform_state = subprocess.check_output(["terraform", "state", "list"]).decode()
-                
-                # İşlem geçmişi bölümü
-                doc.add_heading('İşlem Geçmişi', level=1)
-                
-                # Terraform durumunu ekle
-                doc.add_heading('Terraform Durumu', level=2)
-                doc.add_paragraph(terraform_state)
+                try:
+                    # Önce terraform init çalıştır
+                    init_result = subprocess.run(["terraform", "init"], capture_output=True, text=True)
+                    if init_result.returncode != 0:
+                        doc.add_heading('Terraform Başlatma Hatası', level=2)
+                        doc.add_paragraph(init_result.stderr)
+                    else:
+                        # Terraform durumunu al
+                        state_result = subprocess.run(["terraform", "state", "list"], capture_output=True, text=True)
+                        if state_result.returncode == 0:
+                            doc.add_heading('Terraform Durumu', level=2)
+                            doc.add_paragraph(state_result.stdout)
+                        else:
+                            doc.add_heading('Terraform Durumu Hatası', level=2)
+                            doc.add_paragraph(state_result.stderr)
+                except Exception as terraform_error:
+                    doc.add_heading('Terraform Hatası', level=2)
+                    doc.add_paragraph(str(terraform_error))
                 
                 # Son işlemler bölümü
                 doc.add_heading('Son İşlemler', level=1)
