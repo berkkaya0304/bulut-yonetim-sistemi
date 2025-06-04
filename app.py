@@ -77,7 +77,28 @@ st.title("☁️ Huawei Cloud Yönetim Paneli")
 
 # Yan menü
 with st.sidebar:
-    st.image("https://www.huaweicloud.com/static/img/logo.png", width=200)
+    # Kimlik Bilgileri Butonu
+    if st.button("🔑 Kimlik Bilgilerini Yönet", use_container_width=True):
+        with st.form("credentials_form"):
+            st.markdown("### 🔑 Kimlik Bilgileri")
+            col1, col2 = st.columns(2)
+            with col1:
+                access_key = st.text_input("Access Key", type="password")
+                secret_key = st.text_input("Secret Key", type="password")
+            with col2:
+                region = st.selectbox("Bölge", ["eu-west-101", "ap-southeast-1", "na-mexico-1"])
+                project_id = st.text_input("Proje ID")
+            
+            submitted = st.form_submit_button("Kimlik Bilgilerini Güncelle")
+            if submitted:
+                # Kimlik bilgilerini .env dosyasına kaydet
+                with open(".env", "w") as f:
+                    f.write(f"HUAWEI_ACCESS_KEY={access_key}\n")
+                    f.write(f"HUAWEI_SECRET_KEY={secret_key}\n")
+                    f.write(f"HUAWEI_REGION={region}\n")
+                    f.write(f"HUAWEI_PROJECT_ID={project_id}\n")
+                st.success("Kimlik bilgileri güncellendi!")
+    
     st.markdown("---")
     
     # Ana Menü Kategorileri
@@ -180,8 +201,7 @@ with st.sidebar:
                 "AOM Yönetimi",
                 "LTS Yönetimi",
                 "CES Yönetimi",
-                "Terraform Durumu",
-                "Kimlik Bilgileri"
+                "Terraform Durumu"
             ]
         )
 
@@ -194,7 +214,50 @@ with st.sidebar:
             st.success("Durum yenilendi!")
     with col2:
         if st.button("📊 Rapor"):
-            st.info("Rapor oluşturuluyor...")
+            try:
+                from docx import Document
+                from docx.shared import Inches
+                import os
+                from datetime import datetime
+                
+                # Word dosyası oluştur
+                doc = Document()
+                
+                # Başlık
+                doc.add_heading('Huawei Cloud İşlem Raporu', 0)
+                doc.add_paragraph(f'Oluşturulma Tarihi: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+                
+                # Terraform durumunu al
+                terraform_state = subprocess.check_output(["terraform", "state", "list"]).decode()
+                
+                # İşlem geçmişi bölümü
+                doc.add_heading('İşlem Geçmişi', level=1)
+                
+                # Terraform durumunu ekle
+                doc.add_heading('Terraform Durumu', level=2)
+                doc.add_paragraph(terraform_state)
+                
+                # Son işlemler bölümü
+                doc.add_heading('Son İşlemler', level=1)
+                doc.add_paragraph(f'Son güncelleme: {datetime.now().strftime("%H:%M:%S")}')
+                
+                # Dosyayı kaydet
+                report_name = f"huawei_cloud_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.docx"
+                doc.save(report_name)
+                
+                st.success(f"Rapor oluşturuldu: {report_name}")
+                
+                # Dosyayı indirme linki oluştur
+                with open(report_name, "rb") as file:
+                    st.download_button(
+                        label="📥 Raporu İndir",
+                        data=file,
+                        file_name=report_name,
+                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    )
+                
+            except Exception as e:
+                st.error(f"Rapor oluşturulurken hata oluştu: {str(e)}")
     
     # Durum Bilgisi
     st.markdown("---")
@@ -204,15 +267,6 @@ with st.sidebar:
         st.success("✅ Kimlik bilgileri aktif")
     else:
         st.error("❌ Kimlik bilgileri eksik")
-    
-    # Kaynak Kullanımı
-    st.markdown("### 💰 Kaynak Kullanımı")
-    st.progress(0.65)
-    st.markdown("CPU: 65%")
-    st.progress(0.45)
-    st.markdown("RAM: 45%")
-    st.progress(0.30)
-    st.markdown("Depolama: 30%")
     
     # Son İşlemler
     st.markdown("### 📝 Son İşlemler")
@@ -1315,34 +1369,6 @@ elif service == "Terraform Durumu":
                     terraform_cmd += "\nterraform refresh"
                 st.code(terraform_cmd, language="bash")
                 st.success("Terraform durumu görüntüleme işlemi başlatıldı!")
-
-elif service == "Kimlik Bilgileri":
-    st.header("🔑 Kimlik Bilgileri Yönetimi")
-    
-    credentials_action = st.selectbox(
-        "Kimlik Bilgileri İşlemi Seçin",
-        ["Kimlik Bilgilerini Güncelle", "Kimlik Bilgilerini Görüntüle", "Kimlik Bilgilerini Sil"]
-    )
-    
-    if credentials_action == "Kimlik Bilgilerini Güncelle":
-        with st.form("credentials_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                access_key = st.text_input("Access Key", type="password")
-                secret_key = st.text_input("Secret Key", type="password")
-            with col2:
-                region = st.selectbox("Bölge", ["eu-west-101", "ap-southeast-1", "na-mexico-1"])
-                project_id = st.text_input("Proje ID")
-            
-            submitted = st.form_submit_button("Kimlik Bilgilerini Güncelle")
-            if submitted:
-                # Kimlik bilgilerini .env dosyasına kaydet
-                with open(".env", "w") as f:
-                    f.write(f"HUAWEI_ACCESS_KEY={access_key}\n")
-                    f.write(f"HUAWEI_SECRET_KEY={secret_key}\n")
-                    f.write(f"HUAWEI_REGION={region}\n")
-                    f.write(f"HUAWEI_PROJECT_ID={project_id}\n")
-                st.success("Kimlik bilgileri güncellendi!")
 
 # Güvenlik ve Kimlik Kategorisi - Eksik Servisler
 elif service == "KMS Yönetimi":
