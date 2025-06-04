@@ -1702,7 +1702,7 @@ terraform apply -var="metric_name={metric_name}" -var="start_time={start_time}" 
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center'>
-    <p>Huawei Cloud Yönetim Paneli v2.0 | Geliştirici: Your Name</p>
+    <p>Huawei Cloud Yönetim Paneli v2.0 | Geliştirici: Berk Kaya</p>
     <p>Son güncelleme: {}</p>
 </div>
 """.format(datetime.now().strftime("%Y-%m-%d %H:%M:%S")), unsafe_allow_html=True) 
